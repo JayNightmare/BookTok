@@ -27,7 +27,7 @@ interface BookDao {
     @Query("SELECT * FROM books WHERE title LIKE :query OR author LIKE :query")
     fun searchBooks(query: String): Flow<List<Book>>
 
-    @Query("SELECT * FROM books WHERE genre = :genre ORDER BY dateAdded DESC")
+    @Query("SELECT * FROM books WHERE genre = :genre ORDER BY genre DESC")
     fun getBooksByGenre(genre: String): Flow<List<Book>>
 
     @Query("SELECT * FROM books WHERE pagesRead / totalPages >= :progress ORDER BY dateAdded DESC")
