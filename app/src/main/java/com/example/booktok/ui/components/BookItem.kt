@@ -32,15 +32,20 @@ fun BookItem(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = book.author,
+                text = "by ${book.author}",
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = book.genre ?: "Not specified",
+                style = MaterialTheme.typography.labelSmall
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = book.progress,
-                modifier = Modifier.fillMaxWidth()
+                progress = { book.progress },
+                modifier = Modifier.fillMaxWidth(),
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(

@@ -21,6 +21,7 @@ fun BookEditScreen(
     onBackClick: () -> Unit
 ) {
     val book by viewModel.currentBook.collectAsState()
+    var showError by remember { mutableStateOf(false) }
 
     LaunchedEffect(bookId) {
         if (bookId != null) {
@@ -28,7 +29,6 @@ fun BookEditScreen(
         }
     }
 
-    var showError by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -48,7 +48,10 @@ fun BookEditScreen(
                             book?.author?.isNotEmpty() == true &&
                             (book?.totalPages ?: 0) > 0
                         ) {
-                            book?.let { viewModel.updateBook(it) }
+                            book?.let {
+                                if (bookId == null) viewModel.addBook(it)
+                                else viewModel.updateBook(it)
+                            }
                             onBackClick()
                         } else {
                             showError = true
@@ -74,7 +77,8 @@ fun BookEditScreen(
                 book = book ?: Book(title = "", author = ""),
                 onBookChange = { updatedBook ->
                     viewModel.updateCurrentBook(updatedBook)
-                }
+                },
+                showError = showError
             )
         }
     }
@@ -84,13 +88,13 @@ fun BookEditScreen(
 private fun BookForm(
     book: Book,
     onBookChange: (Book) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showError: Boolean
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        val showError = false
         if (showError) {
             Text(
                 text = "Please fill all required fields correctly",
@@ -103,7 +107,7 @@ private fun BookForm(
         OutlinedTextField(
             value = book.title,
             onValueChange = { onBookChange(book.copy(title = it)) },
-            label = { Text("Title") },
+            label = { Text("Title *") },
             modifier = Modifier.fillMaxWidth(),
             isError = showError && book.title.isEmpty()
         )
@@ -111,7 +115,7 @@ private fun BookForm(
         OutlinedTextField(
             value = book.author,
             onValueChange = { onBookChange(book.copy(author = it)) },
-            label = { Text("Author") },
+            label = { Text("Author *") },
             modifier = Modifier.fillMaxWidth(),
             isError = showError && book.author.isEmpty()
         )
@@ -129,7 +133,7 @@ private fun BookForm(
                 val pages = value.toIntOrNull() ?: 0
                 onBookChange(book.copy(totalPages = pages))
             },
-            label = { Text("Total Pages") },
+            label = { Text("Total Pages *") },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions.Default.copy(
                 keyboardType = KeyboardType.Number

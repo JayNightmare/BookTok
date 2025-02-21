@@ -93,12 +93,12 @@ fun BookListScreen(
             ) {
                 FilterChip(
                     selected = selectedGenre != null,
-                    onClick = { /* TODO: Implement genre filter */ },
+                    onClick = { viewModel.getBooksByGenre(selectedGenre ?: "") },
                     label = { Text("Genre") }
                 )
                 FilterChip(
                     selected = selectedProgress != null,
-                    onClick = { /* TODO: Implement progress filter */ },
+                    onClick = { viewModel.getBooksByProgress(selectedProgress ?: 0f) },
                     label = { Text("Progress") }
                 )
             }
