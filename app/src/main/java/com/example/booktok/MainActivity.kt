@@ -39,7 +39,6 @@ fun BookTokApp() {
         factory = ViewModelFactory(database.bookDao())
     )
 
-
     NavHost(
         navController = navController,
         startDestination = "bookList"
