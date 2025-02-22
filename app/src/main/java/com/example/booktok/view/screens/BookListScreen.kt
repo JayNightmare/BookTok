@@ -1,6 +1,7 @@
 package com.example.booktok.view.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Slider
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -25,12 +26,16 @@ fun BookListScreen(
     onAddBook: () -> Unit,
     viewModel: BookViewModel
 ) {
-    val books by viewModel.allBooks.collectAsState(initial = emptyList())
+    val books by viewModel.searchBooks().collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val genres by viewModel.genres.collectAsState(initial = emptyList())
+    val selectedGenre by viewModel.selectedGenre.collectAsState()
+    val selectedProgress by viewModel.selectedProgress.collectAsState()
+    val progressSortOrder by viewModel.progressSortOrder.collectAsState()
+
     val context = LocalContext.current
-    var showSortMenu by remember { mutableStateOf(false) }
-    val selectedGenre by remember { mutableStateOf<String?>(null) }
-    val selectedProgress by remember { mutableStateOf<Float?>(null) }
+    var showGenreDropdown by remember { mutableStateOf(false) }
+    var showProgressDropdown by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -41,26 +46,6 @@ fun BookListScreen(
                         viewModel.shareBookList(context, books)
                     }) {
                         Icon(Icons.Default.Share, contentDescription = "Share Book List")
-                    }
-                    IconButton(onClick = { showSortMenu = true }) {
-                        Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort Options")
-                    }
-                    DropdownMenu(
-                        expanded = showSortMenu,
-                        onDismissRequest = { showSortMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("By Date Added") },
-                            onClick = { /* TODO: Implement sorting */ }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("By Title") },
-                            onClick = { /* TODO: Implement sorting */ }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("By Progress") },
-                            onClick = { /* TODO: Implement sorting */ }
-                        )
                     }
                 }
             )
@@ -76,33 +61,109 @@ fun BookListScreen(
                 .padding(padding)
                 .fillMaxSize()
         ) {
+            // Search bar
             BookSearchBar(
                 query = searchQuery,
-                onQueryChange = { query ->
-                    viewModel.setSearchQuery(query)
-                    viewModel.filteredBooks()
-                },
+                onQueryChange = { query -> viewModel.setSearchQuery(query) },
                 modifier = Modifier.padding(16.dp)
             )
 
+            // Genre & Progress Filters
             Row(
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FilterChip(
-                    selected = selectedGenre != null,
-                    onClick = { viewModel.getBooksByGenre(selectedGenre ?: "") },
-                    label = { Text("Genre") }
-                )
-                FilterChip(
-                    selected = selectedProgress != null,
-                    onClick = { viewModel.getBooksByProgress(selectedProgress ?: 0f) },
-                    label = { Text("Progress") }
-                )
+                // Genre Filter Dropdown
+                Box {
+                    FilterChip(
+                        selected = selectedGenre != null,
+                        onClick = { showGenreDropdown = true },
+                        label = { Text(selectedGenre ?: "Select Genre") }
+                    )
+
+                    DropdownMenu(
+                        expanded = showGenreDropdown,
+                        onDismissRequest = { showGenreDropdown = false }
+                    ) {
+                        genres.forEach { genre ->
+                            DropdownMenuItem(
+                                text = { Text(genre) },
+                                onClick = {
+                                    viewModel.setSelectedGenre(genre)
+                                    showGenreDropdown = false
+                                }
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = { Text("Clear Genre Filter") },
+                            onClick = {
+                                viewModel.setSelectedGenre(null)
+                                showGenreDropdown = false
+                            }
+                        )
+                    }
+                }
+
+                // Progress Filter Dropdown
+                Box {
+                    FilterChip(
+                        selected = selectedProgress != null || progressSortOrder != null,
+                        onClick = { showProgressDropdown = true },
+                        label = { Text("Progress Filter") }
+                    )
+
+                    DropdownMenu(
+                        expanded = showProgressDropdown,
+                        onDismissRequest = { showProgressDropdown = false }
+                    ) {
+                        listOf(
+                            0.25f to "25% >",
+                            0.5f to "50% >",
+                            0.75f to "75% >",
+                            1.0f to "100%"
+                        ).forEach { (value, label) ->
+                            DropdownMenuItem(
+                                text = { Text(label) },
+                                onClick = {
+                                    viewModel.setSelectedProgress(value)
+                                    viewModel.setProgressSortOrder(null)
+                                    showProgressDropdown = false
+                                }
+                            )
+                        }
+                        Divider()
+                        DropdownMenuItem(
+                            text = { Text("Sort: Lowest to Highest") },
+                            onClick = {
+                                viewModel.setProgressSortOrder(BookViewModel.SortOrder.ASCENDING)
+                                viewModel.setSelectedProgress(null)
+                                showProgressDropdown = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Sort: Highest to Lowest") },
+                            onClick = {
+                                viewModel.setProgressSortOrder(BookViewModel.SortOrder.DESCENDING)
+                                viewModel.setSelectedProgress(null)
+                                showProgressDropdown = false
+                            }
+                        )
+                        Divider()
+                        DropdownMenuItem(
+                            text = { Text("Clear Progress Filter") },
+                            onClick = {
+                                viewModel.setSelectedProgress(null)
+                                viewModel.setProgressSortOrder(null)
+                                showProgressDropdown = false
+                            }
+                        )
+                    }
+                }
             }
 
+            // Book List
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(8.dp),

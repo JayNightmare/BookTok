@@ -71,6 +71,7 @@ dependencies {
     // Room
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
+    implementation(libs.play.services.drive)
     ksp(libs.androidx.room.compiler.v250)
 
     // Icons

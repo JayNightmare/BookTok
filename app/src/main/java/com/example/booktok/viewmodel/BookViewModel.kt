@@ -8,14 +8,25 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.viewModelScope
 import com.example.booktok.model.Book
 import com.example.booktok.model.BookRepository
+import com.google.android.gms.drive.query.SortOrder
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 class BookViewModel(private val repository: BookRepository) : ViewModel() {
+    private val _allBooks = repository.allBooks.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(),
+        emptyList()
+    )
+    val allBooks: StateFlow<List<Book>> = _allBooks
+
     private val _selectedGenre = MutableStateFlow<String?>(null)
     private val _selectedProgress = MutableStateFlow<Float?>(null)
 
-    private val selectedGenre: StateFlow<String?> = _selectedGenre.asStateFlow()
-    private val selectedProgress: StateFlow<Float?> = _selectedProgress.asStateFlow()
+    val selectedGenre: StateFlow<String?> = _selectedGenre.asStateFlow()
+    val selectedProgress: StateFlow<Float?> = _selectedProgress.asStateFlow()
 
     fun setSelectedGenre(genre: String?) {
         _selectedGenre.value = genre
@@ -36,13 +47,19 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         }
     }
 
-    val allBooks = repository.allBooks
-
     private val _currentBook = MutableStateFlow<Book?>(null)
     val currentBook: StateFlow<Book?> = _currentBook.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _progressSortOrder = MutableStateFlow<SortOrder?>(null)
+    val progressSortOrder: StateFlow<SortOrder?> = _progressSortOrder.asStateFlow()
+
+    // Dynamic list of genres
+    val genres = allBooks.map { books ->
+        books.mapNotNull { it.genre }.distinct()
+    }
 
     fun loadBook(bookId: Long) {
         viewModelScope.launch {
@@ -60,7 +77,32 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         _searchQuery.value = query
     }
 
-    fun searchBooks() = repository.searchBooks(_searchQuery.value)
+    fun setProgressSortOrder(order: SortOrder?) {
+        _progressSortOrder.value = order
+    }
+
+    fun searchBooks(): StateFlow<List<Book>> {
+        return combine(allBooks, searchQuery, selectedGenre, selectedProgress, progressSortOrder) { books, query, genre, progress, sortOrder ->
+            books.filter { book ->
+                val matchesQuery = query.isBlank() || book.title.contains(query, ignoreCase = true) || book.author.contains(query, ignoreCase = true)
+                val matchesGenre = genre == null || book.genre.equals(genre, ignoreCase = true)
+                val matchesProgress = progress == null || (book.progress >= progress)
+
+                matchesQuery && matchesGenre && matchesProgress
+            }.let { filteredBooks ->
+                when (sortOrder) {
+                    SortOrder.ASCENDING -> filteredBooks.sortedBy { it.progress }
+                    SortOrder.DESCENDING -> filteredBooks.sortedByDescending { it.progress }
+                    else -> filteredBooks
+                }
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
+    }
+
+    enum class SortOrder {
+        ASCENDING,
+        DESCENDING
+    }
 
     fun addBook(book: Book) = viewModelScope.launch {
         repository.insert(book)
@@ -74,11 +116,6 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
 
     fun deleteBook(book: Book) = viewModelScope.launch {
         repository.delete(book)
-    }
-
-    fun updateReadingProgress(book: Book, pagesRead: Int) = viewModelScope.launch {
-        val updatedBook = book.copy(pagesRead = pagesRead)
-        repository.update(updatedBook)
     }
 
     fun shareBookSummary(context: android.content.Context, book: Book) {

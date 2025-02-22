@@ -14,10 +14,4 @@ class BookRepository(
     suspend fun delete(book: Book) = bookDao.delete(book)
 
     fun getBookById(id: Long): Flow<Book> = bookDao.getBookById(id)
-
-    fun searchBooks(query: String): Flow<List<Book>> = bookDao.searchBooks(query)
-
-    fun getBooksByGenre(genre: String): Flow<List<Book>> = bookDao.getBooksByGenre(genre)
-
-    fun getBooksByProgress(progress: Float): Flow<List<Book>> = bookDao.getBooksByProgress(progress)
 }

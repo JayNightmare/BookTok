@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -17,6 +18,7 @@ import com.example.booktok.view.screens.BookListScreen
 import com.example.booktok.ui.theme.BookTokTheme
 import com.example.booktok.viewmodel.BookViewModel
 import androidx.compose.ui.platform.LocalContext
+import com.example.booktok.model.BookRepository
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,8 +35,16 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun BookTokApp() {
     val navController = rememberNavController()
-    val database = BookDatabase.getDatabase(LocalContext.current.applicationContext)
-    val viewModel: BookViewModel
+    val context = LocalContext.current
+
+    // Initialize Database and Repository
+    val database = remember { BookDatabase.getDatabase(context.applicationContext) }
+    val repository = remember { BookRepository(database.bookDao()) }
+
+    // Create ViewModel and pass the repository
+    val viewModel: BookViewModel = remember {
+        BookViewModel(repository)
+    }
 
     NavHost(
         navController = navController,
