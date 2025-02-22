@@ -1,4 +1,4 @@
-package com.example.booktok.data
+package com.example.booktok.model
 
 import androidx.room.TypeConverter
 import java.util.Date

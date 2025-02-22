@@ -1,4 +1,4 @@
-package com.example.booktok.ui.screens
+package com.example.booktok.view.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -10,8 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.booktok.data.Book
-import com.example.booktok.ui.viewmodels.BookViewModel
+import com.example.booktok.model.Book
+import com.example.booktok.viewmodel.BookViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -111,7 +111,7 @@ private fun BookForm(
             modifier = Modifier.fillMaxWidth(),
             isError = showError && book.title.isEmpty()
         )
-        
+
         OutlinedTextField(
             value = book.author,
             onValueChange = { onBookChange(book.copy(author = it)) },
@@ -119,14 +119,14 @@ private fun BookForm(
             modifier = Modifier.fillMaxWidth(),
             isError = showError && book.author.isEmpty()
         )
-        
+
         OutlinedTextField(
             value = book.genre ?: "",
             onValueChange = { onBookChange(book.copy(genre = it.ifEmpty { null })) },
             label = { Text("Genre (optional)") },
             modifier = Modifier.fillMaxWidth()
         )
-        
+
         OutlinedTextField(
             value = book.totalPages.toString(),
             onValueChange = { value ->
@@ -140,7 +140,7 @@ private fun BookForm(
             ),
             isError = showError && (book.totalPages <= 0)
         )
-        
+
         OutlinedTextField(
             value = book.pagesRead.toString(),
             onValueChange = { value ->

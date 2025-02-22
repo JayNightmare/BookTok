@@ -1,17 +1,40 @@
-package com.example.booktok.ui.viewmodels
+package com.example.booktok.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.example.booktok.data.Book
-import com.example.booktok.data.BookRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import androidx.lifecycle.viewModelScope
+import com.example.booktok.model.Book
+import com.example.booktok.model.BookRepository
+import kotlinx.coroutines.flow.combine
 
-class BookViewModel(
-    private val repository: BookRepository
-) : ViewModel() {
+class BookViewModel(private val repository: BookRepository) : ViewModel() {
+    private val _selectedGenre = MutableStateFlow<String?>(null)
+    private val _selectedProgress = MutableStateFlow<Float?>(null)
+
+    private val selectedGenre: StateFlow<String?> = _selectedGenre.asStateFlow()
+    private val selectedProgress: StateFlow<Float?> = _selectedProgress.asStateFlow()
+
+    fun setSelectedGenre(genre: String?) {
+        _selectedGenre.value = genre
+    }
+
+    fun setSelectedProgress(progress: Float?) {
+        _selectedProgress.value = progress
+    }
+
+    val filteredBooks = combine(
+        repository.allBooks,
+        selectedGenre,
+        selectedProgress
+    ) { books, genre, progress ->
+        books.filter { book ->
+            (genre == null || book.genre == genre) &&
+            (progress == null || book.pagesRead / book.totalPages >= progress)
+        }
+    }
 
     val allBooks = repository.allBooks
 
@@ -21,7 +44,6 @@ class BookViewModel(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    // Use a separate function to load a book by ID
     fun loadBook(bookId: Long) {
         viewModelScope.launch {
             repository.getBookById(bookId).collect { book ->
@@ -39,10 +61,6 @@ class BookViewModel(
     }
 
     fun searchBooks() = repository.searchBooks(_searchQuery.value)
-
-    fun getBooksByGenre(genre: String) = repository.getBooksByGenre(genre)
-
-    fun getBooksByProgress(progress: Float) = repository.getBooksByProgress(progress)
 
     fun addBook(book: Book) = viewModelScope.launch {
         repository.insert(book)
@@ -63,7 +81,6 @@ class BookViewModel(
         repository.update(updatedBook)
     }
 
-    // Sharing functions remain unchanged
     fun shareBookSummary(context: android.content.Context, book: Book) {
         val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
             type = "text/plain"

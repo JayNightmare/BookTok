@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookSearchBar(
     query: String,

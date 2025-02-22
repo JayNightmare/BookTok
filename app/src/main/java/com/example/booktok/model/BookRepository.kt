@@ -1,4 +1,4 @@
-package com.example.booktok.data
+package com.example.booktok.model
 
 import kotlinx.coroutines.flow.Flow
 

@@ -1,4 +1,4 @@
-package com.example.booktok.data
+package com.example.booktok.model
 
 import android.content.Context
 import androidx.room.Database

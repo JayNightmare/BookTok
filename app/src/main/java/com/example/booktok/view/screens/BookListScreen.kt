@@ -1,4 +1,4 @@
-package com.example.booktok.ui.screens
+package com.example.booktok.view.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,7 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.booktok.ui.components.BookItem
 import com.example.booktok.ui.components.BookSearchBar
-import com.example.booktok.ui.viewmodels.BookViewModel
+import com.example.booktok.viewmodel.BookViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,8 +37,8 @@ fun BookListScreen(
             CenterAlignedTopAppBar(
                 title = { Text("BookTok") },
                 actions = {
-                    IconButton(onClick = { 
-                        viewModel.shareBookList(context, books) 
+                    IconButton(onClick = {
+                        viewModel.shareBookList(context, books)
                     }) {
                         Icon(Icons.Default.Share, contentDescription = "Share Book List")
                     }
@@ -80,7 +80,7 @@ fun BookListScreen(
                 query = searchQuery,
                 onQueryChange = { query ->
                     viewModel.setSearchQuery(query)
-                    viewModel.searchBooks()
+                    viewModel.filteredBooks()
                 },
                 modifier = Modifier.padding(16.dp)
             )

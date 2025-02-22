@@ -1,4 +1,4 @@
-package com.example.booktok.ui.screens
+package com.example.booktok.view.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -14,7 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.booktok.ui.components.ProgressTracker
-import com.example.booktok.ui.viewmodels.BookViewModel
+import com.example.booktok.viewmodel.BookViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +49,7 @@ fun BookDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { 
+                    IconButton(onClick = {
                         book?.let { viewModel.shareBookSummary(context, it) }
                     }) {
                         Icon(Icons.Default.Share, contentDescription = "Share Book Summary")
@@ -73,7 +73,7 @@ fun BookDetailScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     OutlinedTextField(
                         value = editedAuthor,
                         onValueChange = { editedAuthor = it },
@@ -81,7 +81,7 @@ fun BookDetailScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     OutlinedTextField(
                         value = editedGenre,
                         onValueChange = { editedGenre = it },
@@ -89,7 +89,7 @@ fun BookDetailScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     OutlinedTextField(
                         value = editedTotalPages,
                         onValueChange = { editedTotalPages = it },
@@ -100,7 +100,7 @@ fun BookDetailScreen(
                         )
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     Button(
                         onClick = {
                             val updatedBook = book.copy(
@@ -122,13 +122,13 @@ fun BookDetailScreen(
                         style = MaterialTheme.typography.titleLarge
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     Text(
                         text = "Author: ${book.author}",
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     if (book.genre != null) {
                         Text(
                             text = "Genre: ${book.genre}",
@@ -144,9 +144,9 @@ fun BookDetailScreen(
                             viewModel.updateBook(book.copy(pagesRead = pages))
                         }
                     )
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     Button(
                         onClick = {
                             editedTitle = book.title

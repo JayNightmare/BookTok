@@ -10,13 +10,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.booktok.data.BookDatabase
-import com.example.booktok.di.ViewModelFactory
-import com.example.booktok.ui.screens.BookDetailScreen
-import com.example.booktok.ui.screens.BookEditScreen
-import com.example.booktok.ui.screens.BookListScreen
+import com.example.booktok.model.BookDatabase
+import com.example.booktok.view.screens.BookDetailScreen
+import com.example.booktok.view.screens.BookEditScreen
+import com.example.booktok.view.screens.BookListScreen
 import com.example.booktok.ui.theme.BookTokTheme
-import com.example.booktok.ui.viewmodels.BookViewModel
+import com.example.booktok.viewmodel.BookViewModel
 import androidx.compose.ui.platform.LocalContext
 
 class MainActivity : ComponentActivity() {
@@ -35,9 +34,7 @@ class MainActivity : ComponentActivity() {
 fun BookTokApp() {
     val navController = rememberNavController()
     val database = BookDatabase.getDatabase(LocalContext.current.applicationContext)
-    val viewModel: BookViewModel = viewModel(
-        factory = ViewModelFactory(database.bookDao())
-    )
+    val viewModel: BookViewModel
 
     NavHost(
         navController = navController,
