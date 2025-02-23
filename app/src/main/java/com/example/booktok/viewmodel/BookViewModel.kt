@@ -1,5 +1,10 @@
 package com.example.booktok.viewmodel
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -8,7 +13,6 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.viewModelScope
 import com.example.booktok.model.Book
 import com.example.booktok.model.BookRepository
-import com.google.android.gms.drive.query.SortOrder
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -20,7 +24,7 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         SharingStarted.WhileSubscribed(),
         emptyList()
     )
-    val allBooks: StateFlow<List<Book>> = _allBooks
+    private val allBooks: StateFlow<List<Book>> = _allBooks
 
     private val _selectedGenre = MutableStateFlow<String?>(null)
     private val _selectedProgress = MutableStateFlow<Float?>(null)
@@ -34,17 +38,6 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
 
     fun setSelectedProgress(progress: Float?) {
         _selectedProgress.value = progress
-    }
-
-    val filteredBooks = combine(
-        repository.allBooks,
-        selectedGenre,
-        selectedProgress
-    ) { books, genre, progress ->
-        books.filter { book ->
-            (genre == null || book.genre == genre) &&
-            (progress == null || book.pagesRead / book.totalPages >= progress)
-        }
     }
 
     private val _currentBook = MutableStateFlow<Book?>(null)
@@ -118,35 +111,58 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         repository.delete(book)
     }
 
-    fun shareBookSummary(context: android.content.Context, book: Book) {
+    fun shareBookSummary(context: android.content.Context, book: Book, recipientEmail: String = "") {
         val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(android.content.Intent.EXTRA_SUBJECT, "Book Summary: ${book.title}")
-            putExtra(android.content.Intent.EXTRA_TEXT, """
-                Book Title: ${book.title}
-                Author: ${book.author}
-                Genre: ${book.genre ?: "Not specified"}
-                Progress: ${(book.progress * 100).toInt()}%
-                Pages Read: ${book.pagesRead}/${book.totalPages}
-            """.trimIndent())
+            putExtra(android.content.Intent.EXTRA_TEXT,
+                """
+        📖 Title: ${book.title}
+        ✍️ Author: ${book.author}
+        🏷️ Genre: ${book.genre ?: "Not specified"}
+        📊 Progress: ${(book.progress * 100).toInt()}% completed
+        📄 Pages Read: ${book.pagesRead}/${book.totalPages}
+        """.trimIndent()
+            )
         }
         context.startActivity(android.content.Intent.createChooser(intent, "Share book summary via"))
     }
 
-    fun shareBookList(context: android.content.Context, books: List<Book>) {
+    fun shareBookList(context: android.content.Context, books: List<Book>, recipientEmail: String = "") {
+        val subject = "My Book List from BookTok 📚"
         val bookListText = books.joinToString("\n\n") { book ->
             """
-            Title: ${book.title}
-            Author: ${book.author}
-            Progress: ${(book.progress * 100).toInt()}%
-            """.trimIndent()
+        📖 Title: ${book.title}
+        ✍️ Author: ${book.author}
+        🏷️ Genre: ${book.genre ?: "Not specified"}
+        📊 Progress: ${(book.progress * 100).toInt()}% completed
+        📄 Pages Read: ${book.pagesRead}/${book.totalPages}
+        """.trimIndent()
         }
 
-        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(android.content.Intent.EXTRA_SUBJECT, "My Book List")
-            putExtra(android.content.Intent.EXTRA_TEXT, bookListText)
+        // Use mailto URI for email sharing
+        val intent = android.content.Intent(Intent.ACTION_SENDTO).apply {
+            data = Uri.parse("mailto:$recipientEmail") // Pre-fill recipient if provided
+            putExtra(Intent.EXTRA_SUBJECT, subject)
+            putExtra(Intent.EXTRA_TEXT, bookListText)
         }
-        context.startActivity(android.content.Intent.createChooser(intent, "Share book list via"))
+
+        // Check if an email app is available
+        if (intent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(Intent.createChooser(intent, "Send Book List via Email"))
+        } else {
+            Toast.makeText(context, "No email clients installed.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun saveBackgroundUri(context: Context, uri: String) {
+        val sharedPreferences = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putString("background_image_uri", uri).apply()
+        Log.d("ViewModel", "Saved backgroundImageUri: $uri")
+    }
+
+    fun getBackgroundUri(context: Context): String? {
+        val sharedPreferences = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+        return sharedPreferences.getString("background_image_uri", null)
     }
 }

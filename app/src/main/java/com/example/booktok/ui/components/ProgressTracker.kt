@@ -13,7 +13,7 @@ fun ProgressTracker(
     onProgressChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var currentPages by remember { mutableStateOf(pagesRead) }
+    var currentPages by remember { mutableIntStateOf(pagesRead) }
 
     Column(modifier = modifier) {
         Text(
@@ -21,10 +21,10 @@ fun ProgressTracker(
             style = MaterialTheme.typography.titleMedium
         )
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         LinearProgressIndicator(
-            progress = if (totalPages > 0) currentPages.toFloat() / totalPages else 0f,
-            modifier = Modifier.fillMaxWidth()
+            progress = { if (totalPages > 0) currentPages.toFloat() / totalPages else 0f },
+            modifier = Modifier.fillMaxWidth(),
         )
         Spacer(modifier = Modifier.height(8.dp))
         
