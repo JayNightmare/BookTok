@@ -29,7 +29,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
 import com.example.booktok.model.Book
 import java.util.Calendar
 import java.util.Locale
@@ -40,23 +39,20 @@ fun BookForm(
     onBookChange: (Book) -> Unit,
     modifier: Modifier = Modifier,
     showError: Boolean,
-    onSelectImage: () -> Unit
+    onSelectImage: () -> Unit,
+    isEditing: Long?
 ) {
     val context = LocalContext.current
     val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
 
-    // State to control DatePicker visibility
     var showDatePicker by remember { mutableStateOf(false) }
-
-    // Separate calendar state to prevent recompositions
     val calendar = remember { Calendar.getInstance().apply { time = book.dateAdded } }
 
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-
-        // If showError is true, display an error message
+        // Show error message if applicable
         if (showError) {
             Text(
                 text = "Please fill all required fields correctly",
@@ -68,10 +64,10 @@ fun BookForm(
 
         // Cover Image Picker
         Button(onClick = onSelectImage) {
-            Text("Select Book Cover")
+            Text(if (isEditing != null) "Change Book Cover" else "Select Book Cover")
         }
 
-        // Enter Title
+        // Title Field
         OutlinedTextField(
             value = book.title,
             onValueChange = { onBookChange(book.copy(title = it)) },
@@ -80,7 +76,7 @@ fun BookForm(
             isError = showError && book.title.isEmpty()
         )
 
-        // Enter Author
+        // Author Field
         OutlinedTextField(
             value = book.author,
             onValueChange = { onBookChange(book.copy(author = it)) },
@@ -89,7 +85,7 @@ fun BookForm(
             isError = showError && book.author.isEmpty()
         )
 
-        // Enter Genre (optional)
+        // Genre Field
         OutlinedTextField(
             value = book.genre ?: "",
             onValueChange = { onBookChange(book.copy(genre = it.ifEmpty { null })) },
@@ -97,7 +93,7 @@ fun BookForm(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Enter Total Pages
+        // Total Pages Field
         OutlinedTextField(
             value = book.totalPages.toString(),
             onValueChange = { value ->
@@ -106,27 +102,27 @@ fun BookForm(
             },
             label = { Text("Total Pages*") },
             modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions.Default.copy(
-                keyboardType = KeyboardType.Number
-            ),
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
             isError = showError && (book.totalPages <= 0)
         )
 
-        // Enter Pages Read
+        // Pages Read Field
         OutlinedTextField(
             value = book.pagesRead.toString(),
             onValueChange = { value ->
                 val pages = value.toIntOrNull() ?: 0
-                onBookChange(book.copy(pagesRead = pages))
+                // Only update if pages read is less than or equal to total pages
+                if (pages in 0..book.totalPages) {
+                    onBookChange(book.copy(pagesRead = pages))
+                }
             },
             label = { Text("Pages Read") },
             modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions.Default.copy(
-                keyboardType = KeyboardType.Number
-            )
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+            isError = book.pagesRead > book.totalPages
         )
 
-        // Enter Date added
+        // Date Added Field
         OutlinedTextField(
             value = dateFormatter.format(book.dateAdded),
             onValueChange = {},
@@ -158,8 +154,15 @@ fun BookForm(
         }
 
         // Preview the Selected Image
-        book.backgroundImageUri?.let { byteArray ->
-            val bitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
+        book.coverImage?.let {
+            val bitmap by remember(book.coverImage) {
+                mutableStateOf(
+                    book.coverImage.let { byteArray ->
+                        BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
+                    }
+                )
+            }
+
             bitmap?.let {
                 Image(
                     bitmap = it.asImageBitmap(),
@@ -170,7 +173,7 @@ fun BookForm(
                     contentScale = ContentScale.Crop
                 )
             }
-        }
 
+        }
     }
 }

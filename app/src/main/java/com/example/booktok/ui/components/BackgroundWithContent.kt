@@ -15,16 +15,16 @@ import com.example.booktok.R
 
 @Composable
 fun BackgroundWithContent(
-    backgroundImageUri: String? = null,
+    coverImage: String? = null,
     defaultImageRes: Int = R.drawable.default_background,
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
-    Log.d("BackgroundWithContent", ">> Rendering background with URI: $backgroundImageUri")
+    Log.d("BackgroundWithContent", ">> Rendering background with URI: $coverImage")
 
     val painter = rememberAsyncImagePainter(
             ImageRequest.Builder(context)
-                .data(backgroundImageUri?.let { Uri.parse(it) } ?: defaultImageRes)
+                .data(coverImage?.let { Uri.parse(it) } ?: defaultImageRes)
                 .crossfade(true)
                 .placeholder(defaultImageRes)
                 .error(defaultImageRes)

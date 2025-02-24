@@ -1,8 +1,6 @@
 package com.example.booktok.viewmodel
 
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
@@ -28,6 +26,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 
 class BookViewModel(private val repository: BookRepository) : ViewModel() {
+
+    // StateFlow for all books
     private val _allBooks = repository.allBooks
         .stateIn(
         viewModelScope,
@@ -36,40 +36,51 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
     )
     private val allBooks: StateFlow<List<Book>> = _allBooks
 
+    // StateFlow for the selected genre and progress
     private val _selectedGenre = MutableStateFlow<String?>(null)
     private val _selectedProgress = MutableStateFlow<Float?>(null)
 
     val selectedGenre: StateFlow<String?> = _selectedGenre.asStateFlow()
     val selectedProgress: StateFlow<Float?> = _selectedProgress.asStateFlow()
 
-    private fun loadBookImageUris() {
-        viewModelScope.launch {
-            repository.allBooks.collect { bookList ->
-                bookList.forEach { book ->
-                    Log.d("DEBUG", ">> Book: ${book.title}, URI: ${book.backgroundImageUri}")
-                }
-            }
-        }
-    }
-
-    init {
-        loadBookImageUris() // Ensure this is called
-    }
-
+    // Dynamically update the selected genre and progress
     fun setSelectedGenre(genre: String?) {
         _selectedGenre.value = genre
     }
 
+    // Dynamically update the selected progress
     fun setSelectedProgress(progress: Float?) {
         _selectedProgress.value = progress
     }
 
+    // Selected Books Logic
+    private val _selectedBooks = MutableStateFlow<List<Book>>(emptyList())
+    val selectedBooks: StateFlow<List<Book>> = _selectedBooks.asStateFlow()
+
+    fun toggleBookSelection(book: Book) {
+        val currentSelection = _selectedBooks.value.toMutableList()
+        if (currentSelection.contains(book)) {
+            currentSelection.remove(book)
+        } else {
+            currentSelection.add(book)
+        }
+        _selectedBooks.value = currentSelection
+    }
+
+    // Clear the selected books
+    fun clearSelectedBooks() {
+        _selectedBooks.value = emptyList()
+    }
+
+    // StateFlow for the currently selected book
     private val _currentBook = MutableStateFlow<Book?>(null)
     val currentBook: StateFlow<Book?> = _currentBook.asStateFlow()
 
+    // StateFlow for the search query
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    // StateFlow for the progress sort order
     private val _progressSortOrder = MutableStateFlow<SortOrder?>(null)
     val progressSortOrder: StateFlow<SortOrder?> = _progressSortOrder.asStateFlow()
 
@@ -78,6 +89,7 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         books.mapNotNull { it.genre }.distinct()
     }
 
+    // Load book based on book id
     fun loadBook(bookId: Long) {
         viewModelScope.launch {
             repository.getBookById(bookId).collect { book ->
@@ -86,10 +98,12 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         }
     }
 
+    // Update the current book
     fun updateCurrentBook(book: Book) {
         _currentBook.value = book
     }
 
+    // Update the search query
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
     }
@@ -205,7 +219,6 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
             content = listOf(EmailContent(type = "text/plain", value = bookListText))
         )
 
-        // Log the email request payload
         Log.d("DEBUG", "EmailRequest Payload: ${Gson().toJson(emailRequest)}")
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -228,5 +241,4 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
             }
         }
     }
-
 }

@@ -26,7 +26,7 @@ fun BookListScreen(
     onBookClick: (Long) -> Unit,
     onAddBook: () -> Unit,
     viewModel: BookViewModel,
-    backgroundImageUri: String? = null
+    coverImage: String? = null
 ) {
     val books by viewModel.searchBooks().collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -34,6 +34,7 @@ fun BookListScreen(
     val selectedGenre by viewModel.selectedGenre.collectAsState()
     val selectedProgress by viewModel.selectedProgress.collectAsState()
     val progressSortOrder by viewModel.progressSortOrder.collectAsState()
+    val selectedBooks by viewModel.selectedBooks.collectAsState()
 
     val context = LocalContext.current
     var showGenreDropdown by remember { mutableStateOf(false) }
@@ -43,7 +44,7 @@ fun BookListScreen(
     Log.d("BookListScreen", ">> Using books: $books")
 
     // Apply Background Image using the fetched URI
-    BackgroundWithContent(backgroundImageUri = backgroundImageUri) {
+    BackgroundWithContent(coverImage = coverImage) {
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
@@ -87,7 +88,13 @@ fun BookListScreen(
                         FilterChip(
                             selected = selectedGenre != null,
                             onClick = { showGenreDropdown = true },
-                            label = { Text(selectedGenre ?: "Select Genre") }
+                            label = {
+                                Text(
+                                    text = selectedGenre?.let {
+                                        if (it.length > 10) it.take(10) + "..." else it
+                                    } ?: "Select Genre"
+                                )
+                            }
                         )
 
                         DropdownMenu(
@@ -189,7 +196,9 @@ fun BookListScreen(
                 // List of Books in Grid Layout
                 BookGrid(
                     books = books,
+                    selectedBooks = selectedBooks,
                     onBookClick = { bookId -> onBookClick(bookId) },
+                    onBookLongClick = { viewModel.toggleBookSelection(it) }
                 )
             }
         }
@@ -198,8 +207,15 @@ fun BookListScreen(
         if (showEmailDialog) {
             EmailInputDialog(
                 title = "Share Book List",
+                selectedBooks = selectedBooks.ifEmpty { books },  // Pass selected or all books
                 onConfirm = { email ->
-                    viewModel.shareBookList(context, books, email)
+                    if (selectedBooks.isNotEmpty()) {
+                        // Share only selected books
+                        viewModel.shareBookList(context, selectedBooks, email)
+                    } else {
+                        // Share all books
+                        viewModel.shareBookList(context, books, email)
+                    }
                     showEmailDialog = false
                 },
                 onDismiss = { showEmailDialog = false }

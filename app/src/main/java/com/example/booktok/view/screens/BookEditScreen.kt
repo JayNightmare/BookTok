@@ -54,13 +54,12 @@ fun BookEditScreen(
                 val byteArray = uriToByteArray(context, selectedUri)
                 byteArray?.let { data ->
                     book?.let { currentBook ->
-                        viewModel.updateCurrentBook(currentBook.copy(backgroundImageUri = data))
+                        viewModel.updateCurrentBook(currentBook.copy(coverImage = data))
                     }
                 }
             }
         }
     )
-
 
     LaunchedEffect(bookId) {
         if (bookId == null) {
@@ -69,6 +68,9 @@ fun BookEditScreen(
             viewModel.loadBook(bookId)
         }
     }
+
+    // Determine if editing based on bookId and loaded book data
+    val isEditing = bookId
 
     Scaffold(
         topBar = {
@@ -119,7 +121,8 @@ fun BookEditScreen(
                     viewModel.updateCurrentBook(updatedBook)
                 },
                 showError = showError,
-                onSelectImage = { imagePickerLauncher.launch("image/*") }
+                onSelectImage = { imagePickerLauncher.launch("image/*") },
+                isEditing = isEditing
             )
         }
     }

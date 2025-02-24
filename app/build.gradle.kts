@@ -73,6 +73,7 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     implementation(libs.play.services.drive)
+    implementation(libs.androidx.storage)
     ksp(libs.androidx.room.compiler.v250)
 
     // Icons

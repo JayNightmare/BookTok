@@ -5,6 +5,7 @@ import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import java.util.Date
 
+//
 @TypeConverters(Converters::class)
 
 @Entity(tableName = "books")
@@ -16,7 +17,8 @@ data class Book(
     val dateAdded: Date = Date(),
     val pagesRead: Int = 0,
     val totalPages: Int = 0,
-    val backgroundImageUri: ByteArray? = null
+    val coverImage: ByteArray? = null,
+    var isSelected: Boolean = false
 ) {
     val progress: Float
         get() = if (totalPages > 0) pagesRead.toFloat() / totalPages else 0f

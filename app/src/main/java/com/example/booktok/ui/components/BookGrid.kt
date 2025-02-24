@@ -15,6 +15,8 @@ import com.example.booktok.model.Book
 fun BookGrid(
     books: List<Book>,
     onBookClick: (Long) -> Unit,
+    selectedBooks: List<Book>,
+    onBookLongClick: (Book) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
@@ -35,6 +37,8 @@ fun BookGrid(
                 BookItem(
                     book = book,
                     onClick = { onBookClick(book.id) },
+                    isSelected = selectedBooks.contains(book),
+                    onLongClick = { onBookLongClick(book) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(0.7f), // Maintain card aspect ratio
