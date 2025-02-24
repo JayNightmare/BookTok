@@ -13,10 +13,19 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.viewModelScope
 import com.example.booktok.model.Book
 import com.example.booktok.model.BookRepository
+import com.example.booktok.model.network.EmailAddress
+import com.example.booktok.model.network.EmailApi
+import com.example.booktok.model.network.EmailContent
+import com.example.booktok.model.network.EmailRequest
+import com.example.booktok.model.network.Personalization
+import com.google.gson.Gson
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.withContext
 
 class BookViewModel(private val repository: BookRepository) : ViewModel() {
     private val _allBooks = repository.allBooks
@@ -126,7 +135,7 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         repository.delete(book)
     }
 
-    fun shareBookSummary(context: android.content.Context, book: Book, recipientEmail: String = "") {
+    fun shareBookSummary(context: Context, book: Book, recipientEmail: String) {
         val subject = "Book Summary: ${book.title}"
         val body = """
         📖 Title: ${book.title}
@@ -134,24 +143,45 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         🏷️ Genre: ${book.genre ?: "Not specified"}
         📊 Progress: ${(book.progress * 100).toInt()}% completed
         📄 Pages Read: ${book.pagesRead}/${book.totalPages}
+        📆 Date Added: ${book.dateAdded}
     """.trimIndent()
 
-        val intent = android.content.Intent(Intent.ACTION_SENDTO).apply {
-            data = Uri.parse("mailto:")  // Ensure only email apps handle this
-            putExtra(Intent.EXTRA_EMAIL, arrayOf(recipientEmail))  // Recipient email
-            putExtra(Intent.EXTRA_SUBJECT, subject)
-            putExtra(Intent.EXTRA_TEXT, body)
-        }
+        val emailRequest = EmailRequest(
+            personalizations = listOf(
+                Personalization(
+                    to = listOf(EmailAddress(email = recipientEmail))
+                )
+            ),
+            from = EmailAddress(email = "booktok.app.mad@gmail.com", name = "BookTok App"),
+            subject = subject,
+            content = listOf(EmailContent(type = "text/plain", value = body))
+        )
 
-        // Check if an email app is available
-        if (intent.resolveActivity(context.packageManager) != null) {
-            context.startActivity(Intent.createChooser(intent, "Send Book Summary via Email"))
-        } else {
-            Toast.makeText(context, "No email clients installed.", Toast.LENGTH_SHORT).show()
+        // Log the email request payload
+        Log.d("DEBUG", "EmailRequest Payload: ${Gson().toJson(emailRequest)}")
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = EmailApi.retrofitService.sendEmail(emailRequest)
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful) {
+                        Toast.makeText(context, "Book summary sent successfully!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        val errorMsg = response.errorBody()?.string() ?: "Unknown error"
+                        Toast.makeText(context, "Failed to send email: $errorMsg", Toast.LENGTH_LONG).show()
+                        Log.e("DEBUG", ">> Failed to send email: $errorMsg")
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Error sending email: ${e.message}", Toast.LENGTH_LONG).show()
+                    Log.e("DEBUG", ">> Exception: ${e.message}")
+                }
+            }
         }
     }
 
-    fun shareBookList(context: android.content.Context, books: List<Book>, recipientEmail: String = "") {
+    fun shareBookList(context: Context, books: List<Book>, recipientEmail: String) {
         val subject = "My Book List from BookTok 📚"
         val bookListText = books.joinToString("\n\n") { book ->
             """
@@ -160,21 +190,42 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         🏷️ Genre: ${book.genre ?: "Not specified"}
         📊 Progress: ${(book.progress * 100).toInt()}% completed
         📄 Pages Read: ${book.pagesRead}/${book.totalPages}
+        📆 Date Added: ${book.dateAdded}
         """.trimIndent()
         }
 
-        val intent = android.content.Intent(Intent.ACTION_SENDTO).apply {
-            data = Uri.parse("mailto:")  // Pre-fill recipient if provided
-            putExtra(Intent.EXTRA_EMAIL, arrayOf(recipientEmail))
-            putExtra(Intent.EXTRA_SUBJECT, subject)
-            putExtra(Intent.EXTRA_TEXT, bookListText)
-        }
+        val emailRequest = EmailRequest(
+            personalizations = listOf(
+                Personalization(
+                    to = listOf(EmailAddress(email = recipientEmail))
+                )
+            ),
+            from = EmailAddress(email = "booktok.app.mad@gmail.com", name = "BookTok App"),
+            subject = subject,
+            content = listOf(EmailContent(type = "text/plain", value = bookListText))
+        )
 
-        // Check if an email app is available
-        if (intent.resolveActivity(context.packageManager) != null) {
-            context.startActivity(Intent.createChooser(intent, "Send Book List via Email"))
-        } else {
-            Toast.makeText(context, "No email clients installed", Toast.LENGTH_SHORT).show()
+        // Log the email request payload
+        Log.d("DEBUG", "EmailRequest Payload: ${Gson().toJson(emailRequest)}")
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = EmailApi.retrofitService.sendEmail(emailRequest)
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful) {
+                        Toast.makeText(context, "Book list sent successfully!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        val errorMsg = response.errorBody()?.string() ?: "Unknown error"
+                        Toast.makeText(context, "Failed to send email: $errorMsg", Toast.LENGTH_LONG).show()
+                        Log.e("DEBUG", ">> Failed to send email: $errorMsg")
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Error sending email: ${e.message}", Toast.LENGTH_LONG).show()
+                    Log.e("DEBUG", ">> Exception: ${e.message}")
+                }
+            }
         }
     }
 
