@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.booktok.ui.components.EmailInputDialog
 import com.example.booktok.ui.components.ProgressTracker
 import com.example.booktok.viewmodel.BookViewModel
 
@@ -38,6 +39,7 @@ fun BookDetailScreen(
     var editedGenre by remember { mutableStateOf("") }
     var editedTotalPages by remember { mutableStateOf("") }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showEmailDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -52,9 +54,7 @@ fun BookDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        book?.let { viewModel.shareBookSummary(context, it) }
-                    }) {
+                    IconButton(onClick = { showEmailDialog = true }) {
                         Icon(Icons.Default.Share, contentDescription = "Share Book Summary")
                     }
                 }
@@ -211,6 +211,20 @@ fun BookDetailScreen(
                     Text("Cancel")
                 }
             }
+        )
+    }
+
+    // Email Dialog
+    if (showEmailDialog) {
+        EmailInputDialog(
+            title = "Share Book Summary",
+            onConfirm = { email ->
+                book?.let {
+                    viewModel.shareBookSummary(context, it, email)
+                }
+                showEmailDialog = false
+            },
+            onDismiss = { showEmailDialog = false }
         )
     }
 }

@@ -1,5 +1,6 @@
 package com.example.booktok.ui.components
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -14,7 +15,6 @@ import com.example.booktok.model.Book
 fun BookGrid(
     books: List<Book>,
     onBookClick: (Long) -> Unit,
-    backgroundImageUri: String? = null
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
@@ -31,13 +31,13 @@ fun BookGrid(
             modifier = Modifier.fillMaxSize()
         ) {
             items(books) { book ->
+                Log.d("BookGrid", ">> Displaying book: $book")
                 BookItem(
                     book = book,
                     onClick = { onBookClick(book.id) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(0.7f), // Maintain card aspect ratio
-                    backgroundImageUri = backgroundImageUri
                 )
             }
         }

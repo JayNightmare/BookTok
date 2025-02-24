@@ -19,7 +19,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 class BookViewModel(private val repository: BookRepository) : ViewModel() {
-    private val _allBooks = repository.allBooks.stateIn(
+    private val _allBooks = repository.allBooks
+        .stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(),
         emptyList()
@@ -31,6 +32,20 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
 
     val selectedGenre: StateFlow<String?> = _selectedGenre.asStateFlow()
     val selectedProgress: StateFlow<Float?> = _selectedProgress.asStateFlow()
+
+    private fun loadBookImageUris() {
+        viewModelScope.launch {
+            repository.allBooks.collect { bookList ->
+                bookList.forEach { book ->
+                    Log.d("DEBUG", ">> Book: ${book.title}, URI: ${book.backgroundImageUri}")
+                }
+            }
+        }
+    }
+
+    init {
+        loadBookImageUris() // Ensure this is called
+    }
 
     fun setSelectedGenre(genre: String?) {
         _selectedGenre.value = genre
@@ -112,20 +127,28 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
     }
 
     fun shareBookSummary(context: android.content.Context, book: Book, recipientEmail: String = "") {
-        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(android.content.Intent.EXTRA_SUBJECT, "Book Summary: ${book.title}")
-            putExtra(android.content.Intent.EXTRA_TEXT,
-                """
+        val subject = "Book Summary: ${book.title}"
+        val body = """
         📖 Title: ${book.title}
         ✍️ Author: ${book.author}
         🏷️ Genre: ${book.genre ?: "Not specified"}
         📊 Progress: ${(book.progress * 100).toInt()}% completed
         📄 Pages Read: ${book.pagesRead}/${book.totalPages}
-        """.trimIndent()
-            )
+    """.trimIndent()
+
+        val intent = android.content.Intent(Intent.ACTION_SENDTO).apply {
+            data = Uri.parse("mailto:")  // Ensure only email apps handle this
+            putExtra(Intent.EXTRA_EMAIL, arrayOf(recipientEmail))  // Recipient email
+            putExtra(Intent.EXTRA_SUBJECT, subject)
+            putExtra(Intent.EXTRA_TEXT, body)
         }
-        context.startActivity(android.content.Intent.createChooser(intent, "Share book summary via"))
+
+        // Check if an email app is available
+        if (intent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(Intent.createChooser(intent, "Send Book Summary via Email"))
+        } else {
+            Toast.makeText(context, "No email clients installed.", Toast.LENGTH_SHORT).show()
+        }
     }
 
     fun shareBookList(context: android.content.Context, books: List<Book>, recipientEmail: String = "") {
@@ -140,9 +163,9 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         """.trimIndent()
         }
 
-        // Use mailto URI for email sharing
         val intent = android.content.Intent(Intent.ACTION_SENDTO).apply {
-            data = Uri.parse("mailto:$recipientEmail") // Pre-fill recipient if provided
+            data = Uri.parse("mailto:")  // Pre-fill recipient if provided
+            putExtra(Intent.EXTRA_EMAIL, arrayOf(recipientEmail))
             putExtra(Intent.EXTRA_SUBJECT, subject)
             putExtra(Intent.EXTRA_TEXT, bookListText)
         }
@@ -151,18 +174,8 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         if (intent.resolveActivity(context.packageManager) != null) {
             context.startActivity(Intent.createChooser(intent, "Send Book List via Email"))
         } else {
-            Toast.makeText(context, "No email clients installed.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "No email clients installed", Toast.LENGTH_SHORT).show()
         }
     }
 
-    fun saveBackgroundUri(context: Context, uri: String) {
-        val sharedPreferences = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-        sharedPreferences.edit().putString("background_image_uri", uri).apply()
-        Log.d("ViewModel", "Saved backgroundImageUri: $uri")
-    }
-
-    fun getBackgroundUri(context: Context): String? {
-        val sharedPreferences = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-        return sharedPreferences.getString("background_image_uri", null)
-    }
 }

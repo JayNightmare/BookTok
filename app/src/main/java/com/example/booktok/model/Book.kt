@@ -16,7 +16,7 @@ data class Book(
     val dateAdded: Date = Date(),
     val pagesRead: Int = 0,
     val totalPages: Int = 0,
-    val backgroundImageUri: String? = null
+    val backgroundImageUri: ByteArray? = null
 ) {
     val progress: Float
         get() = if (totalPages > 0) pagesRead.toFloat() / totalPages else 0f

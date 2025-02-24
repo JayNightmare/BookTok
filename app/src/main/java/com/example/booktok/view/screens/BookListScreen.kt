@@ -1,13 +1,8 @@
 package com.example.booktok.view.screens
 
-import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Share
@@ -22,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.example.booktok.ui.components.BackgroundWithContent
 import com.example.booktok.ui.components.BookGrid
 import com.example.booktok.ui.components.BookSearchBar
+import com.example.booktok.ui.components.EmailInputDialog
 import com.example.booktok.viewmodel.BookViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,19 +38,18 @@ fun BookListScreen(
     val context = LocalContext.current
     var showGenreDropdown by remember { mutableStateOf(false) }
     var showProgressDropdown by remember { mutableStateOf(false) }
+    var showEmailDialog by remember { mutableStateOf(false) }
 
-    // Local state to manage the background image URI
-    val localBackgroundImageUri = backgroundImageUri
-    Log.d("BookListScreen", ">> Using backgroundImageUri: $localBackgroundImageUri")
+    Log.d("BookListScreen", ">> Using books: $books")
 
     // Apply Background Image using the fetched URI
-    BackgroundWithContent(backgroundImageUri = localBackgroundImageUri) {
+    BackgroundWithContent(backgroundImageUri = backgroundImageUri) {
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
                     title = { Text("BookTok") },
                     actions = {
-                        IconButton(onClick = { viewModel.shareBookList(context, books) }) {
+                        IconButton(onClick = { showEmailDialog = true }) {
                             Icon(Icons.Default.Share, contentDescription = "Share Book List")
                         }
                     }
@@ -195,9 +190,20 @@ fun BookListScreen(
                 BookGrid(
                     books = books,
                     onBookClick = { bookId -> onBookClick(bookId) },
-                    backgroundImageUri = localBackgroundImageUri
                 )
             }
+        }
+
+        // Email Dialog
+        if (showEmailDialog) {
+            EmailInputDialog(
+                title = "Share Book List",
+                onConfirm = { email ->
+                    viewModel.shareBookList(context, books, email)
+                    showEmailDialog = false
+                },
+                onDismiss = { showEmailDialog = false }
+            )
         }
     }
 }

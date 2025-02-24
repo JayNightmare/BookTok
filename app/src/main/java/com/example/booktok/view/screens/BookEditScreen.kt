@@ -1,5 +1,6 @@
 package com.example.booktok.view.screens
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.booktok.model.Book
 import com.example.booktok.ui.components.BookForm
@@ -38,14 +40,27 @@ fun BookEditScreen(
     val book by viewModel.currentBook.collectAsState()
     var showError by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri: Uri? ->
-            if (uri != null) {
-                book?.let { viewModel.updateCurrentBook(it.copy(backgroundImageUri = uri.toString())) }
+            uri?.let { selectedUri ->
+                // Persist permission if needed
+                context.contentResolver.takePersistableUriPermission(
+                    selectedUri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+                // Convert the URI to a ByteArray
+                val byteArray = uriToByteArray(context, selectedUri)
+                byteArray?.let { data ->
+                    book?.let { currentBook ->
+                        viewModel.updateCurrentBook(currentBook.copy(backgroundImageUri = data))
+                    }
+                }
             }
         }
     )
+
 
     LaunchedEffect(bookId) {
         if (bookId == null) {
