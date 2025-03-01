@@ -1,3 +1,7 @@
+# BookTok
+book journey app that allows you to keep track of your progress on your books.
+Add a book with a image and fill your progress bar!
+
 # Home Page
 ![image](https://github.com/user-attachments/assets/8747d893-323f-4a0f-8096-a215b4e5bf0b)
 
