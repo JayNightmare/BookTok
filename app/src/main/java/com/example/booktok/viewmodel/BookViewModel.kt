@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
+import java.util.Date
 
 class BookViewModel(private val repository: BookRepository) : ViewModel() {
 
@@ -67,9 +68,8 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         _selectedBooks.value = currentSelection
     }
 
-    // Clear the selected books
-    fun clearSelectedBooks() {
-        _selectedBooks.value = emptyList()
+    fun setSelectedBooks(books: List<Book>) {
+        _selectedBooks.value = books
     }
 
     // StateFlow for the currently selected book
@@ -83,6 +83,13 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
     // StateFlow for the progress sort order
     private val _progressSortOrder = MutableStateFlow<SortOrder?>(null)
     val progressSortOrder: StateFlow<SortOrder?> = _progressSortOrder.asStateFlow()
+
+    // StateFlow for the date range
+    private val _startDate = MutableStateFlow<Date?>(null)
+    private val startDate: StateFlow<Date?> = _startDate.asStateFlow()
+
+    private val _endDate = MutableStateFlow<Date?>(null)
+    private val endDate: StateFlow<Date?> = _endDate.asStateFlow()
 
     // Dynamic list of genres
     val genres = allBooks.map { books ->
@@ -112,22 +119,94 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         _progressSortOrder.value = order
     }
 
+    // Search For Books
     fun searchBooks(): StateFlow<List<Book>> {
-        return combine(allBooks, searchQuery, selectedGenre, selectedProgress, progressSortOrder) { books, query, genre, progress, sortOrder ->
-            books.filter { book ->
-                val matchesQuery = query.isBlank() || book.title.contains(query, ignoreCase = true) || book.author.contains(query, ignoreCase = true)
-                val matchesGenre = genre == null || book.genre.equals(genre, ignoreCase = true)
-                val matchesProgress = progress == null || (book.progress >= progress)
+        return combine(
+            combine(allBooks, searchQuery, selectedGenre, selectedProgress, progressSortOrder)
+            { books, query, genre, progress, sortOrder ->
+                FilterParams(books, query, genre, progress, sortOrder)
+            },
+            combine(startDate, endDate) { start, end ->
+                DateRange(start, end)
+            },
+            dateAddedFilter
+        ) { filterParams, dateRange, dateFilter ->
 
-                matchesQuery && matchesGenre && matchesProgress
+            val now = Date()
+
+            filterParams.books.filter { book ->
+                val matchesQuery = filterParams.query.isBlank() ||
+                        book.title.contains(filterParams.query, ignoreCase = true) ||
+                        book.author.contains(filterParams.query, ignoreCase = true)
+
+                val matchesGenre = filterParams.genre == null ||
+                        book.genre.equals(filterParams.genre, ignoreCase = true)
+
+                val matchesProgress = filterParams.progress == null ||
+                        (book.progress >= filterParams.progress)
+
+                val matchesStartDate = dateRange.start == null || !book.dateAdded.before(dateRange.start)
+                val matchesEndDate = dateRange.end == null || !book.dateAdded.after(dateRange.end)
+
+                val matchesDateAdded = when (dateFilter) {
+                    DateAddedFilter.LAST_ADDED -> {
+                        val latestDate = filterParams.books.maxByOrNull { it.dateAdded }?.dateAdded
+                        book.dateAdded == latestDate
+                    }
+                    DateAddedFilter.WEEK_AGO -> {
+                        val weekAgo = Date(now.time - 7L * 24 * 60 * 60 * 1000) // 7 days ago
+                        !book.dateAdded.before(weekAgo)
+                    }
+                    DateAddedFilter.MONTH_AGO -> {
+                        val monthAgo = Date(now.time - 30L * 24 * 60 * 60 * 1000) // 30 days ago
+                        !book.dateAdded.before(monthAgo)
+                    }
+                    else -> true // No filter applied
+                }
+
+                matchesQuery && matchesGenre && matchesProgress && matchesStartDate && matchesEndDate && matchesDateAdded
             }.let { filteredBooks ->
-                when (sortOrder) {
-                    SortOrder.ASCENDING -> filteredBooks.sortedBy { it.progress }
-                    SortOrder.DESCENDING -> filteredBooks.sortedByDescending { it.progress }
-                    else -> filteredBooks
+                when (dateFilter) {
+                    DateAddedFilter.ASCENDING -> filteredBooks.sortedBy { it.dateAdded }
+                    DateAddedFilter.DESCENDING -> filteredBooks.sortedByDescending { it.dateAdded }
+                    else -> when (filterParams.sortOrder) {
+                        SortOrder.ASCENDING -> filteredBooks.sortedBy { it.progress }
+                        SortOrder.DESCENDING -> filteredBooks.sortedByDescending { it.progress }
+                        else -> filteredBooks
+                    }
                 }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
+    }
+
+    // Helper Data Class
+    data class FilterParams(
+        val books: List<Book>,
+        val query: String,
+        val genre: String?,
+        val progress: Float?,
+        val sortOrder: SortOrder?
+    )
+
+    // Date Range Data Class
+    data class DateRange(
+        val start: Date?,
+        val end: Date?
+    )
+
+    private val _dateAddedFilter = MutableStateFlow<DateAddedFilter?>(null)
+    val dateAddedFilter: StateFlow<DateAddedFilter?> = _dateAddedFilter.asStateFlow()
+
+    fun setDateAddedFilter(filter: DateAddedFilter?) {
+        _dateAddedFilter.value = filter
+    }
+
+    enum class DateAddedFilter {
+        ASCENDING,
+        DESCENDING,
+        LAST_ADDED,
+        WEEK_AGO,
+        MONTH_AGO
     }
 
     enum class SortOrder {
@@ -135,20 +214,24 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         DESCENDING
     }
 
+    fun getBookById(id: Long) = repository.getBookById(id)
+
+    // Add Book
     fun addBook(book: Book) = viewModelScope.launch {
         repository.insert(book)
     }
 
-    fun getBookById(id: Long) = repository.getBookById(id)
-
+    // Update Book
     fun updateBook(book: Book) = viewModelScope.launch {
         repository.update(book)
     }
 
+    // Delete Book
     fun deleteBook(book: Book) = viewModelScope.launch {
         repository.delete(book)
     }
 
+    // Share Book Details
     fun shareBookSummary(context: Context, book: Book, recipientEmail: String) {
         val subject = "Book Summary: ${book.title}"
         val body = """
@@ -160,6 +243,7 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         📆 Date Added: ${book.dateAdded}
     """.trimIndent()
 
+        // Create an email request
         val emailRequest = EmailRequest(
             personalizations = listOf(
                 Personalization(
@@ -174,6 +258,7 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         // Log the email request payload
         Log.d("DEBUG", "EmailRequest Payload: ${Gson().toJson(emailRequest)}")
 
+        // Send the email
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val response = EmailApi.retrofitService.sendEmail(emailRequest)
@@ -195,6 +280,7 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
         }
     }
 
+    // Share Book List
     fun shareBookList(context: Context, books: List<Book>, recipientEmail: String) {
         val subject = "My Book List from BookTok 📚"
         val bookListText = books.joinToString("\n\n") { book ->

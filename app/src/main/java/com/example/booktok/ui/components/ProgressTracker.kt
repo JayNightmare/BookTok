@@ -1,6 +1,7 @@
 package com.example.booktok.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -11,6 +12,7 @@ fun ProgressTracker(
     pagesRead: Int,
     totalPages: Int,
     onProgressChange: (Int) -> Unit,
+    keyboardOptions: KeyboardOptions,
     modifier: Modifier = Modifier
 ) {
     var currentPages by remember { mutableIntStateOf(pagesRead) }
@@ -48,7 +50,8 @@ fun ProgressTracker(
                 }
             },
             label = { Text("Pages read") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = keyboardOptions
         )
     }
 }

@@ -3,6 +3,7 @@ package com.example.booktok.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
+import com.example.booktok.viewmodel.BookViewModel
 import java.util.Date
 
 //

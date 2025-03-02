@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
@@ -59,6 +61,8 @@ fun BookDetailScreen(
                         )
                     }
                 },
+
+                // Share Button
                 actions = {
                     IconButton(onClick = { showEmailDialog = true }) {
                         Icon(Icons.Default.Share, contentDescription = "Share Book Summary")
@@ -133,7 +137,8 @@ fun BookDetailScreen(
                     totalPages = book.totalPages,
                     onProgressChange = { pages ->
                         viewModel.updateBook(book.copy(pagesRead = pages))
-                    }
+                    },
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -166,6 +171,7 @@ fun BookDetailScreen(
         }
     }
 
+    // Show the delete dialog
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -192,6 +198,7 @@ fun BookDetailScreen(
         )
     }
 
+    // Show the email dialog
     if (showEmailDialog) {
         EmailInputDialog(
             title = "Share Book Summary",
@@ -201,7 +208,7 @@ fun BookDetailScreen(
                 }
                 showEmailDialog = false
             },
-            selectedBooks = null,
+            selectedBook = book,
             onDismiss = { showEmailDialog = false }
         )
     }

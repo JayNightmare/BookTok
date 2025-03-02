@@ -19,7 +19,8 @@ fun EmailInputDialog(
     title: String,
     selectedBooks: List<Book>? = null,
     onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    selectedBook: Book?
 ) {
     var email by remember { mutableStateOf("") }
 
@@ -48,6 +49,8 @@ fun EmailInputDialog(
                             Text("📖 ${book.title} by ${book.author}")
                         }
                     }
+                } else if (selectedBook != null) {
+                    Text("📖 ${selectedBook.title} by ${selectedBook.author}")
                 }
             }
         },

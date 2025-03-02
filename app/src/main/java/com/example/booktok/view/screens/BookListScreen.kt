@@ -1,9 +1,12 @@
 package com.example.booktok.view.screens
 
 import android.util.Log
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
@@ -35,6 +38,8 @@ fun BookListScreen(
     val selectedProgress by viewModel.selectedProgress.collectAsState()
     val progressSortOrder by viewModel.progressSortOrder.collectAsState()
     val selectedBooks by viewModel.selectedBooks.collectAsState()
+    var showDateFilterDropdown by remember { mutableStateOf(false) }
+    val dateAddedFilter by viewModel.dateAddedFilter.collectAsState()
 
     val context = LocalContext.current
     var showGenreDropdown by remember { mutableStateOf(false) }
@@ -80,8 +85,9 @@ fun BookListScreen(
                 Row(
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                 ) {
                     // Genre Filter Dropdown
                     Box {
@@ -110,6 +116,7 @@ fun BookListScreen(
                                     }
                                 )
                             }
+                            HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Clear Genre Filter") },
                                 onClick = {
@@ -125,7 +132,7 @@ fun BookListScreen(
                         FilterChip(
                             selected = selectedProgress != null || progressSortOrder != null,
                             onClick = { showProgressDropdown = true },
-                            label = { Text("Progress Filter") }
+                            label = { Text("Progress") }
                         )
 
                         DropdownMenu(
@@ -177,14 +184,61 @@ fun BookListScreen(
                         }
                     }
 
+                    // Date Added Filter Dropdown
+                    Box {
+                        FilterChip(
+                            selected = dateAddedFilter != null,
+                            onClick = { showDateFilterDropdown = true },
+                            label = {
+                                Icon(Icons.Default.CalendarMonth, contentDescription = "Date Filter")
+                            }
+                        )
+
+                        DropdownMenu(
+                            expanded = showDateFilterDropdown,
+                            onDismissRequest = { showDateFilterDropdown = false }
+                        ) {
+                            listOf(
+                                BookViewModel.DateAddedFilter.LAST_ADDED to "Last Added",
+                                BookViewModel.DateAddedFilter.WEEK_AGO to "Added Last Week",
+                                BookViewModel.DateAddedFilter.MONTH_AGO to "Added Last Month",
+                                BookViewModel.DateAddedFilter.ASCENDING to "Oldest to Newest",
+                                BookViewModel.DateAddedFilter.DESCENDING to "Newest to Oldest"
+                            ).forEach { (filter, label) ->
+                                DropdownMenuItem(
+                                    text = { Text(label) },
+                                    onClick = {
+                                        viewModel.setDateAddedFilter(filter)
+                                        showDateFilterDropdown = false
+                                    }
+                                )
+                            }
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text("Clear Date Filter") },
+                                onClick = {
+                                    viewModel.setDateAddedFilter(null)
+                                    showDateFilterDropdown = false
+                                }
+                            )
+                        }
+                    }
+
                     // Clear All Filters
                     Box {
                         FilterChip(
-                            selected = selectedGenre != null || selectedProgress != null || progressSortOrder != null,
+                            selected = selectedGenre != null ||
+                                    selectedProgress != null ||
+                                    progressSortOrder != null ||
+                                    dateAddedFilter != null ||
+                                    selectedBooks.isNotEmpty()
+                            ,
                             onClick = {
                                 viewModel.setSelectedGenre(null)
                                 viewModel.setSelectedProgress(null)
                                 viewModel.setProgressSortOrder(null)
+                                viewModel.setDateAddedFilter(null)
+                                viewModel.setSelectedBooks(emptyList())
                             },
                             label = { Icon(Icons.Default.Clear, contentDescription = "Clear Filters") }
                         )
@@ -218,7 +272,8 @@ fun BookListScreen(
                     }
                     showEmailDialog = false
                 },
-                onDismiss = { showEmailDialog = false }
+                onDismiss = { showEmailDialog = false },
+                selectedBook = null
             )
         }
     }
