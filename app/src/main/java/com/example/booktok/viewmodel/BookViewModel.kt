@@ -27,7 +27,6 @@ import kotlinx.coroutines.withContext
 import java.util.Date
 
 class BookViewModel(private val repository: BookRepository) : ViewModel() {
-
     // StateFlow for all books
     private val _allBooks = repository.allBooks
         .stateIn(

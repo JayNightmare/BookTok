@@ -17,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.booktok.ui.components.BackgroundWithContent
 import com.example.booktok.ui.components.BookGrid
 import com.example.booktok.ui.components.BookSearchBar
 import com.example.booktok.ui.components.EmailInputDialog
@@ -29,7 +28,6 @@ fun BookListScreen(
     onBookClick: (Long) -> Unit,
     onAddBook: () -> Unit,
     viewModel: BookViewModel,
-    coverImage: String? = null
 ) {
     val books by viewModel.searchBooks().collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -48,233 +46,231 @@ fun BookListScreen(
 
     Log.d("BookListScreen", ">> Using books: $books")
 
-    // Apply Background Image using the fetched URI
-    BackgroundWithContent(coverImage = coverImage) {
-        Scaffold(
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = { Text("BookTok") },
-                    actions = {
-                        IconButton(onClick = { showEmailDialog = true }) {
-                            Icon(Icons.Default.Share, contentDescription = "Share Book List")
-                        }
-                    }
-                )
-            },
-            floatingActionButton = {
-                Column {
-                    FloatingActionButton(onClick = { onAddBook() }) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Book")
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("BookTok") },
+                actions = {
+                    IconButton(onClick = { showEmailDialog = true }) {
+                        Icon(Icons.Default.Share, contentDescription = "Share Book List")
                     }
                 }
+            )
+        },
+        floatingActionButton = {
+            Column {
+                FloatingActionButton(onClick = { onAddBook() }) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Book")
+                }
             }
-        ) { padding ->
-            Column(
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
+            // Search bar
+            BookSearchBar(
+                query = searchQuery,
+                onQueryChange = { query -> viewModel.setSearchQuery(query) },
+                modifier = Modifier.padding(16.dp)
+            )
+
+            // Genre & Progress Filters
+            Row(
                 modifier = Modifier
-                    .padding(padding)
-                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
             ) {
-                // Search bar
-                BookSearchBar(
-                    query = searchQuery,
-                    onQueryChange = { query -> viewModel.setSearchQuery(query) },
-                    modifier = Modifier.padding(16.dp)
-                )
+                // Genre Filter Dropdown
+                Box {
+                    FilterChip(
+                        selected = selectedGenre != null,
+                        onClick = { showGenreDropdown = true },
+                        label = {
+                            Text(
+                                text = selectedGenre?.let {
+                                    if (it.length > 10) it.take(10) + "..." else it
+                                } ?: "Select Genre"
+                            )
+                        }
+                    )
 
-                // Genre & Progress Filters
-                Row(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                ) {
-                    // Genre Filter Dropdown
-                    Box {
-                        FilterChip(
-                            selected = selectedGenre != null,
-                            onClick = { showGenreDropdown = true },
-                            label = {
-                                Text(
-                                    text = selectedGenre?.let {
-                                        if (it.length > 10) it.take(10) + "..." else it
-                                    } ?: "Select Genre"
-                                )
-                            }
-                        )
-
-                        DropdownMenu(
-                            expanded = showGenreDropdown,
-                            onDismissRequest = { showGenreDropdown = false }
-                        ) {
-                            genres.forEach { genre ->
-                                DropdownMenuItem(
-                                    text = { Text(genre) },
-                                    onClick = {
-                                        viewModel.setSelectedGenre(genre)
-                                        showGenreDropdown = false
-                                    }
-                                )
-                            }
-                            HorizontalDivider()
+                    DropdownMenu(
+                        expanded = showGenreDropdown,
+                        onDismissRequest = { showGenreDropdown = false }
+                    ) {
+                        genres.forEach { genre ->
                             DropdownMenuItem(
-                                text = { Text("Clear Genre Filter") },
+                                text = { Text(genre) },
                                 onClick = {
-                                    viewModel.setSelectedGenre(null)
+                                    viewModel.setSelectedGenre(genre)
                                     showGenreDropdown = false
                                 }
                             )
                         }
-                    }
-
-                    // Progress Filter Dropdown
-                    Box {
-                        FilterChip(
-                            selected = selectedProgress != null || progressSortOrder != null,
-                            onClick = { showProgressDropdown = true },
-                            label = { Text("Progress") }
-                        )
-
-                        DropdownMenu(
-                            expanded = showProgressDropdown,
-                            onDismissRequest = { showProgressDropdown = false }
-                        ) {
-                            listOf(
-                                -0.25f to "Less Than 25%",
-                                0.25f to "25% Progress",
-                                0.5f to "50% Progress",
-                                0.75f to "75% Progress",
-                                1.0f to "Completed"
-                            ).forEach { (value, label) ->
-                                DropdownMenuItem(
-                                    text = { Text(label) },
-                                    onClick = {
-                                        viewModel.setSelectedProgress(value)
-                                        viewModel.setProgressSortOrder(null)
-                                        showProgressDropdown = false
-                                    }
-                                )
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("Clear Genre Filter") },
+                            onClick = {
+                                viewModel.setSelectedGenre(null)
+                                showGenreDropdown = false
                             }
-                            HorizontalDivider()
+                        )
+                    }
+                }
+
+                // Progress Filter Dropdown
+                Box {
+                    FilterChip(
+                        selected = selectedProgress != null || progressSortOrder != null,
+                        onClick = { showProgressDropdown = true },
+                        label = { Text("Progress") }
+                    )
+
+                    DropdownMenu(
+                        expanded = showProgressDropdown,
+                        onDismissRequest = { showProgressDropdown = false }
+                    ) {
+                        listOf(
+                            -0.25f to "Less Than 25%",
+                            0.25f to "25% Progress",
+                            0.5f to "50% Progress",
+                            0.75f to "75% Progress",
+                            1.0f to "Completed"
+                        ).forEach { (value, label) ->
                             DropdownMenuItem(
-                                text = { Text("Sort: Lowest to Highest") },
+                                text = { Text(label) },
                                 onClick = {
-                                    viewModel.setProgressSortOrder(BookViewModel.SortOrder.ASCENDING)
-                                    viewModel.setSelectedProgress(null)
-                                    showProgressDropdown = false
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Sort: Highest to Lowest") },
-                                onClick = {
-                                    viewModel.setProgressSortOrder(BookViewModel.SortOrder.DESCENDING)
-                                    viewModel.setSelectedProgress(null)
-                                    showProgressDropdown = false
-                                }
-                            )
-                            HorizontalDivider()
-                            DropdownMenuItem(
-                                text = { Text("Clear Progress Filter") },
-                                onClick = {
-                                    viewModel.setSelectedProgress(null)
+                                    viewModel.setSelectedProgress(value)
                                     viewModel.setProgressSortOrder(null)
                                     showProgressDropdown = false
                                 }
                             )
                         }
-                    }
-
-                    // Date Added Filter Dropdown
-                    Box {
-                        FilterChip(
-                            selected = dateAddedFilter != null,
-                            onClick = { showDateFilterDropdown = true },
-                            label = {
-                                Icon(Icons.Default.CalendarMonth, contentDescription = "Date Filter")
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("Sort: Lowest to Highest") },
+                            onClick = {
+                                viewModel.setProgressSortOrder(BookViewModel.SortOrder.ASCENDING)
+                                viewModel.setSelectedProgress(null)
+                                showProgressDropdown = false
                             }
                         )
-
-                        DropdownMenu(
-                            expanded = showDateFilterDropdown,
-                            onDismissRequest = { showDateFilterDropdown = false }
-                        ) {
-                            listOf(
-                                BookViewModel.DateAddedFilter.LAST_ADDED to "Last Added",
-                                BookViewModel.DateAddedFilter.WEEK_AGO to "Added Last Week",
-                                BookViewModel.DateAddedFilter.MONTH_AGO to "Added Last Month",
-                                BookViewModel.DateAddedFilter.ASCENDING to "Oldest to Newest",
-                                BookViewModel.DateAddedFilter.DESCENDING to "Newest to Oldest"
-                            ).forEach { (filter, label) ->
-                                DropdownMenuItem(
-                                    text = { Text(label) },
-                                    onClick = {
-                                        viewModel.setDateAddedFilter(filter)
-                                        showDateFilterDropdown = false
-                                    }
-                                )
-                            }
-                            HorizontalDivider()
-                            DropdownMenuItem(
-                                text = { Text("Clear Date Filter") },
-                                onClick = {
-                                    viewModel.setDateAddedFilter(null)
-                                    showDateFilterDropdown = false
-                                }
-                            )
-                        }
-                    }
-
-                    // Clear All Filters
-                    Box {
-                        FilterChip(
-                            selected = selectedGenre != null ||
-                                    selectedProgress != null ||
-                                    progressSortOrder != null ||
-                                    dateAddedFilter != null ||
-                                    selectedBooks.isNotEmpty()
-                            ,
+                        DropdownMenuItem(
+                            text = { Text("Sort: Highest to Lowest") },
                             onClick = {
-                                viewModel.setSelectedGenre(null)
+                                viewModel.setProgressSortOrder(BookViewModel.SortOrder.DESCENDING)
+                                viewModel.setSelectedProgress(null)
+                                showProgressDropdown = false
+                            }
+                        )
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("Clear Progress Filter") },
+                            onClick = {
                                 viewModel.setSelectedProgress(null)
                                 viewModel.setProgressSortOrder(null)
-                                viewModel.setDateAddedFilter(null)
-                                viewModel.setSelectedBooks(emptyList())
-                            },
-                            label = { Icon(Icons.Default.Clear, contentDescription = "Clear Filters") }
+                                showProgressDropdown = false
+                            }
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                // Date Added Filter Dropdown
+                Box {
+                    FilterChip(
+                        selected = dateAddedFilter != null,
+                        onClick = { showDateFilterDropdown = true },
+                        label = {
+                            Icon(Icons.Default.CalendarMonth, contentDescription = "Date Filter")
+                        }
+                    )
 
-                // List of Books in Grid Layout
-                BookGrid(
-                    books = books,
-                    selectedBooks = selectedBooks,
-                    onBookClick = { bookId -> onBookClick(bookId) },
-                    onBookLongClick = { viewModel.toggleBookSelection(it) }
-                )
-            }
-        }
-
-        // Email Dialog
-        if (showEmailDialog) {
-            EmailInputDialog(
-                title = "Share Book List",
-                selectedBooks = selectedBooks.ifEmpty { books },  // Pass selected or all books
-                onConfirm = { email ->
-                    if (selectedBooks.isNotEmpty()) {
-                        // Share only selected books
-                        viewModel.shareBookList(context, selectedBooks, email)
-                    } else {
-                        // Share all books
-                        viewModel.shareBookList(context, books, email)
+                    DropdownMenu(
+                        expanded = showDateFilterDropdown,
+                        onDismissRequest = { showDateFilterDropdown = false }
+                    ) {
+                        listOf(
+                            BookViewModel.DateAddedFilter.LAST_ADDED to "Last Added",
+                            BookViewModel.DateAddedFilter.WEEK_AGO to "Added Last Week",
+                            BookViewModel.DateAddedFilter.MONTH_AGO to "Added Last Month",
+                            BookViewModel.DateAddedFilter.ASCENDING to "Oldest to Newest",
+                            BookViewModel.DateAddedFilter.DESCENDING to "Newest to Oldest"
+                        ).forEach { (filter, label) ->
+                            DropdownMenuItem(
+                                text = { Text(label) },
+                                onClick = {
+                                    viewModel.setDateAddedFilter(filter)
+                                    showDateFilterDropdown = false
+                                }
+                            )
+                        }
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("Clear Date Filter") },
+                            onClick = {
+                                viewModel.setDateAddedFilter(null)
+                                showDateFilterDropdown = false
+                            }
+                        )
                     }
-                    showEmailDialog = false
-                },
-                onDismiss = { showEmailDialog = false },
-                selectedBook = null
+                }
+
+                // Clear All Filters
+                Box {
+                    FilterChip(
+                        selected = selectedGenre != null ||
+                                selectedProgress != null ||
+                                progressSortOrder != null ||
+                                dateAddedFilter != null ||
+                                selectedBooks.isNotEmpty()
+                        ,
+                        onClick = {
+                            viewModel.setSelectedGenre(null)
+                            viewModel.setSelectedProgress(null)
+                            viewModel.setProgressSortOrder(null)
+                            viewModel.setDateAddedFilter(null)
+                            viewModel.setSelectedBooks(emptyList())
+                        },
+                        label = { Icon(Icons.Default.Clear, contentDescription = "Clear Filters") }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // List of Books in Grid Layout
+            BookGrid(
+                books = books,
+                selectedBooks = selectedBooks,
+                onBookClick = { bookId -> onBookClick(bookId) },
+                onBookLongClick = { viewModel.toggleBookSelection(it) }
             )
         }
     }
+
+    // Email Dialog
+    if (showEmailDialog) {
+        EmailInputDialog(
+            title = "Share Book List",
+            selectedBooks = selectedBooks.ifEmpty { books },  // Pass selected or all books
+            onConfirm = { email ->
+                if (selectedBooks.isNotEmpty()) {
+                    // Share only selected books
+                    viewModel.shareBookList(context, selectedBooks, email)
+                } else {
+                    // Share all books
+                    viewModel.shareBookList(context, books, email)
+                }
+                showEmailDialog = false
+            },
+            onDismiss = { showEmailDialog = false },
+            selectedBook = null
+        )
+    }
 }
+
