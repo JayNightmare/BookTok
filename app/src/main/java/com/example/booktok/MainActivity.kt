@@ -39,7 +39,6 @@ class MainActivity : ComponentActivity() {
  * Manages the entire app's navigation structure and view model initialization
  * * Uses NavController for handling screen navigation
  * * Implements remember for maintaining state across recompositions
- * TODO: Consider implementing dependency injection framework for better scalability
  */
 @Composable
 fun BookTokApp() {
@@ -56,7 +55,6 @@ fun BookTokApp() {
     /*! ViewModel initialization
      * Creates and remembers the BookViewModel instance
      * * Passes repository dependency for data operations
-     * TODO: Consider implementing ViewModel factory for more complex initialization
      */
     val viewModel: BookViewModel = remember {
         BookViewModel(repository)
@@ -88,7 +86,6 @@ fun BookTokApp() {
         /*! Book Detail Screen Route
          * Shows detailed information about a specific book
          * * Handles null safety for bookId parameter
-         * TODO: Implement proper error handling for invalid bookId
          */
         composable("bookDetail/{bookId}") { backStackEntry ->
             val bookId = backStackEntry.arguments?.getString("bookId")?.toLongOrNull()
@@ -123,11 +120,6 @@ fun BookTokApp() {
     }
 }
 
-/*? Preview Composable
- * Provides a preview of the application in Android Studio
- * * Wraps the app in the BookTokTheme for consistent styling
- * TODO: Add different preview configurations for various screen sizes
- */
 @Preview(showBackground = true)
 @Composable
 fun BookTokAppPreview() {

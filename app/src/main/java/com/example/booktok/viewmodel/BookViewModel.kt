@@ -327,4 +327,15 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
             }
         }
     }
+
+    // Check if the book data being added is unique
+    fun isBookUnique(book: Book): Boolean {
+        val existingBooks = allBooks.value
+
+        return existingBooks.none { existing ->
+            existing.title.equals(book.title, ignoreCase = true) &&
+            existing.author.equals(book.author, ignoreCase = true) &&
+            existing.id != book.id // Ignore itself if it's being edited
+        }
+    }
 }

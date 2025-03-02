@@ -2,6 +2,7 @@ package com.example.booktok.view.screens
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -94,13 +95,20 @@ fun BookEditScreen(
                         book?.author?.isNotEmpty() == true &&
                         (book?.totalPages ?: 0) > 0
                     ) {
-                        book?.let {
-                            if (bookId == null) viewModel.addBook(it)
-                            else viewModel.updateBook(it)
+                        if (viewModel.isBookUnique(book!!)) {
+                            book?.let {
+                                if (bookId == null) viewModel.addBook(it)
+                                else viewModel.updateBook(it)
+                            }
+                            onBackClick()
+                        } else {
+                            Toast.makeText(context, "A book with this title and author already exists", Toast.LENGTH_LONG).show()
                         }
-                        onBackClick()
-                    } else { showError = true }
-                }) { Icon(
+                    } else {
+                        showError = true
+                    }
+                }) {
+                    Icon(
                         imageVector = Icons.Filled.Save,
                         contentDescription = "Save"
                     )
